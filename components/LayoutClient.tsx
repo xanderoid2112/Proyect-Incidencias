@@ -1,30 +1,33 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Navbar from './Navbar';
-import Sidebar from './Sidebar';
-
+import { useState } from "react";
+import Navbar from "./Navbar";
+import Sidebar from "./Sidebar";
+import { IncidenciasProvider } from "@/context/IncidenciasContext";
 export default function LayoutClient({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen flex-col bg-background text-foreground">
-      {/* Navbar Superior */}
-      <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+    <IncidenciasProvider>
+      <div className="flex h-screen flex-col bg-[#fafbf7]">
+        <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar Lateral */}
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            collapsed={collapsed}
+            onToggleCollapse={() => setCollapsed(!collapsed)}
+          />
 
-        {/* Contenido Principal */}
-        <main className="flex-1 overflow-auto p-6">
-          {children}
-        </main>
+          <main className="flex-1 overflow-auto p-6">{children}</main>
+        </div>
       </div>
-    </div>
+    </IncidenciasProvider>
   );
 }

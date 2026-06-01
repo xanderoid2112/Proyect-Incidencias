@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
+import { toast } from "sonner"
 export default function CrearIncidenciaModal({ onIncidenciaCreada }) {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -21,7 +21,7 @@ export default function CrearIncidenciaModal({ onIncidenciaCreada }) {
     e.preventDefault();
     
     if(!formData.titulo || !formData.descripcion || !formData.responsable || !formData.categoria) {
-        alert("Todos los campos son obligatorios");
+        toast.error("Todos los campos son obligatorios");
         return;
     }
 
@@ -37,13 +37,13 @@ export default function CrearIncidenciaModal({ onIncidenciaCreada }) {
         setOpen(false); 
         setFormData({ titulo: '', descripcion: '', responsable: '', categoria: '' });
         if(onIncidenciaCreada) onIncidenciaCreada(); 
-        alert("¡Incidencia creada con éxito!");
+        toast.success("¡Incidencia creada con éxito!")
       } else {
-        alert("Hubo un problema al conectar con el backend.");
+        toast.error("Hubo un problema al conectar con el backend.")
       }
     } catch (error) {
       console.error("Error al guardar la incidencia", error);
-      alert("Error de red. ¿El backend está encendido?");
+      toast.error("Error de red. ¿El backend está encendido?");
     }
   };
 
