@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import VerIncidenciaModal from "@/components/VerIncidenciaModal";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -12,10 +11,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { CalendarIcon, X } from "lucide-react";
+import { useIncidencias } from "@/context/IncidenciasContext";
+
 export default function IncidenciasTable() {
-  const [incidencias, setIncidencias] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [rango, setRango] = useState({ from: undefined, to: undefined });
+  const { incidencias, refetch } = useIncidencias();
+  const [estadoFiltro, setEstadoFiltro] = useState("Todos");
+  const [pagina, setPagina] = useState(1);
+  const porPagina = 10;
 
   const actualizarEstado = async (id, nuevoEstado) => {
     try {
@@ -33,56 +36,30 @@ export default function IncidenciasTable() {
         throw new Error("Error al actualizar estado");
       }
 
-      obtenerIncidencias();
+      refetch();
     } catch (error) {
       console.error(error);
       toast.error("No se pudo actualizar el estado");
     }
   };
   const incidenciasFiltradas = incidencias.filter((inc) => {
-    if (!rango.from) return true;
-    const fecha = new Date(inc.fecha);
-    const desde = new Date(rango.from);
-    const hasta = rango.to ? new Date(rango.to) : new Date(rango.from);
-    hasta.setHours(23, 59, 59); // incluye todo el día final
-    return fecha >= desde && fecha <= hasta;
-  });
-  const obtenerIncidencias = async () => {
-    try {
-      const response = await fetch("http://localhost:3001/incidencias");
-      if (!response.ok) throw new Error("Error al obtener incidencias");
-      const data = await response.json();
-      setIncidencias(data);
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
+    // filtro fecha
+    if (rango.from) {
+      const fecha = new Date(inc.fecha);
+      const desde = new Date(rango.from);
+      const hasta = rango.to ? new Date(rango.to) : new Date(rango.from);
+      hasta.setHours(23, 59, 59);
+      if (!(fecha >= desde && fecha <= hasta)) return false;
     }
-  };
-
-  useEffect(() => {
-    obtenerIncidencias();
-  }, []);
-  if (loading) {
-    return (
-      <div className="mt-8 space-y-3">
-        <Skeleton className="h-10 w-48" />
-        <div className="rounded-2xl border overflow-hidden">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="flex gap-4 px-6 py-4 border-b">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-28" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
+    // filtro estado
+    if (estadoFiltro !== "Todos") return inc.estado === estadoFiltro;
+    return true;
+  });
+  const totalPaginas = Math.ceil(incidenciasFiltradas.length / porPagina);
+  const incidenciasVista = incidenciasFiltradas.slice(
+    (pagina - 1) * porPagina,
+    pagina * porPagina,
+  );
   return (
     <div className="mt-8">
       <h2 className="text-2xl font-bold mb-6">Gestión de Incidencias</h2>
@@ -102,19 +79,47 @@ export default function IncidenciasTable() {
             <Calendar
               mode="range"
               selected={rango}
-              onSelect={(val) =>
-                setRango(val ?? { from: undefined, to: undefined })
-              }
+              onSelect={(val) => {
+                setRango(val ?? { from: undefined, to: undefined });
+                setPagina(1);
+              }}
               numberOfMonths={2}
             />
           </PopoverContent>
         </Popover>
-
+        <div className="flex items-center gap-2 flex-wrap">
+          {["Todos", "Pendiente", "En proceso", "Resuelto"].map((estado) => (
+            <button
+              key={estado}
+              onClick={() => {
+                setEstadoFiltro(estado);
+                setPagina(1);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border
+        ${
+          estadoFiltro === estado
+            ? estado === "Todos"
+              ? "bg-[#3c4a27] text-white border-[#3c4a27]"
+              : estado === "Resuelto"
+                ? "bg-green-100 text-green-700 border-green-300"
+                : estado === "En proceso"
+                  ? "bg-yellow-100 text-yellow-700 border-yellow-300"
+                  : "bg-gray-200 text-gray-700 border-gray-300"
+            : "bg-white text-gray-400 border-[#e2e8d5] hover:border-[#c5d49f] hover:text-[#3e4a24]"
+        }`}
+            >
+              {estado}
+            </button>
+          ))}
+        </div>
         {/* Botón limpiar filtro */}
         {rango.from && (
           <button
-            onClick={() => setRango({ from: undefined, to: undefined })}
-            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600"
+            onClick={() => {
+              setRango({ from: undefined, to: undefined });
+              setPagina(1);
+            }}
+            className="inline-flex items-center gap-1 ..."
           >
             <X className="h-3 w-3" /> Limpiar
           </button>
@@ -134,7 +139,7 @@ export default function IncidenciasTable() {
           </thead>
 
           <tbody>
-            {incidenciasFiltradas.map((incidencia) => (
+            {incidenciasVista.map((incidencia) => (
               <tr
                 key={incidencia._id}
                 className="border-b hover:bg-gray-50 transition"
@@ -189,6 +194,62 @@ export default function IncidenciasTable() {
             ))}
           </tbody>
         </table>
+        <div className="flex items-center justify-between px-6 py-4 border-t border-[#e2e8d5]">
+          <p className="text-xs text-[#3e4a24]/50">
+            Mostrando {(pagina - 1) * porPagina + 1}–
+            {Math.min(pagina * porPagina, incidenciasFiltradas.length)} de{" "}
+            {incidenciasFiltradas.length} incidencias
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPagina((p) => Math.max(1, p - 1))}
+              disabled={pagina === 1}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[#e2e8d5] hover:bg-[#f4f7ee] disabled:opacity-40 disabled:cursor-not-allowed text-[#3e4a24]"
+            >
+              ← Anterior
+            </button>
+            {Array.from({ length: totalPaginas }, (_, i) => i + 1)
+              .filter(
+                (n) =>
+                  n === 1 || n === totalPaginas || Math.abs(n - pagina) <= 1,
+              )
+              .reduce((acc, n, idx, arr) => {
+                if (idx > 0 && n - arr[idx - 1] > 1) acc.push("...");
+                acc.push(n);
+                return acc;
+              }, [])
+              .map((item, idx) =>
+                item === "..." ? (
+                  <span
+                    key={`dots-${idx}`}
+                    className="px-2 text-xs text-[#3e4a24]/30"
+                  >
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={`page-${item}`}
+                    onClick={() => setPagina(item)}
+                    className={`w-8 h-8 rounded-lg text-xs font-medium transition-all
+          ${
+            pagina === item
+              ? "bg-[#3c4a27] text-white"
+              : "border border-[#e2e8d5] hover:bg-[#f4f7ee] text-[#3e4a24]"
+          }`}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+            <button
+              onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+              disabled={pagina === totalPaginas}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[#e2e8d5] hover:bg-[#f4f7ee] disabled:opacity-40 disabled:cursor-not-allowed text-[#3e4a24]"
+            >
+              Siguiente →
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
