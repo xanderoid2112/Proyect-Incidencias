@@ -6,7 +6,9 @@ import { AlertCircle, Clock, CheckCircle2, List } from "lucide-react";
 import { ChartIncidencias } from "@/components/ChartIncidencias";
 import { ChartEstados } from "@/components/ChartEstados";
 import { ChartCategorias } from "@/components/ChartCategorias";
-
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { ReportePDF } from "@/components/ReportePDF";
+import { Download } from "lucide-react";
 interface Incidencia {
   _id: string;
   titulo: string;
@@ -109,6 +111,19 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <ChartEstados incidencias={incidencias} />
         <ChartCategorias incidencias={incidencias} />
+      </div>
+      <div className="flex justify-end">
+        <PDFDownloadLink
+          document={<ReportePDF incidencias={incidencias} />}
+          fileName={`reporte-incidencias-${new Date().toISOString().slice(0, 10)}.pdf`}
+        >
+          {({ loading }) => (
+            <button className="inline-flex items-center gap-2 rounded-xl bg-[#3c4a27] hover:bg-[#2d372e] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors">
+              <Download className="h-4 w-4" />
+              {loading ? "Generando..." : "Descargar Reporte PDF"}
+            </button>
+          )}
+        </PDFDownloadLink>
       </div>
     </div>
   );

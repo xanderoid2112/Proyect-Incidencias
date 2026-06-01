@@ -3,9 +3,19 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import VerIncidenciaModal from "@/components/VerIncidenciaModal";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon, X } from "lucide-react";
 export default function IncidenciasTable() {
   const [incidencias, setIncidencias] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [rango, setRango] = useState({ from: undefined, to: undefined });
 
   const actualizarEstado = async (id, nuevoEstado) => {
     try {
@@ -26,10 +36,17 @@ export default function IncidenciasTable() {
       obtenerIncidencias();
     } catch (error) {
       console.error(error);
-      alert("No se pudo actualizar el estado");
+      toast.error("No se pudo actualizar el estado");
     }
   };
-
+  const incidenciasFiltradas = incidencias.filter((inc) => {
+    if (!rango.from) return true;
+    const fecha = new Date(inc.fecha);
+    const desde = new Date(rango.from);
+    const hasta = rango.to ? new Date(rango.to) : new Date(rango.from);
+    hasta.setHours(23, 59, 59); // incluye todo el día final
+    return fecha >= desde && fecha <= hasta;
+  });
   const obtenerIncidencias = async () => {
     try {
       const response = await fetch("http://localhost:3001/incidencias");
@@ -47,13 +64,62 @@ export default function IncidenciasTable() {
     obtenerIncidencias();
   }, []);
   if (loading) {
-    return <p className="mt-4">Cargando incidencias...</p>;
+    return (
+      <div className="mt-8 space-y-3">
+        <Skeleton className="h-10 w-48" />
+        <div className="rounded-2xl border overflow-hidden">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex gap-4 px-6 py-4 border-b">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-28" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="mt-8">
       <h2 className="text-2xl font-bold mb-6">Gestión de Incidencias</h2>
+      <div className="flex items-center gap-3 mb-4">
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="inline-flex items-center gap-2 border rounded-xl px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
+              <CalendarIcon className="h-4 w-4" />
+              {rango.from
+                ? rango.to
+                  ? `${rango.from.toLocaleDateString("es-PE")} → ${rango.to.toLocaleDateString("es-PE")}`
+                  : rango.from.toLocaleDateString("es-PE")
+                : "Filtrar por fecha"}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="range"
+              selected={rango}
+              onSelect={(val) =>
+                setRango(val ?? { from: undefined, to: undefined })
+              }
+              numberOfMonths={2}
+            />
+          </PopoverContent>
+        </Popover>
 
+        {/* Botón limpiar filtro */}
+        {rango.from && (
+          <button
+            onClick={() => setRango({ from: undefined, to: undefined })}
+            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-3 w-3" /> Limpiar
+          </button>
+        )}
+      </div>
       <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
         <table className="w-full">
           <thead>
@@ -68,7 +134,7 @@ export default function IncidenciasTable() {
           </thead>
 
           <tbody>
-            {incidencias.map((incidencia) => (
+            {incidenciasFiltradas.map((incidencia) => (
               <tr
                 key={incidencia._id}
                 className="border-b hover:bg-gray-50 transition"
