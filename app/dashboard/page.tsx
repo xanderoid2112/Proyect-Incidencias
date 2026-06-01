@@ -1,158 +1,114 @@
-import { ArrowUpRight, Coffee, AlertTriangle, Utensils, CheckSquare } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, Clock, CheckCircle2, List } from "lucide-react";
+import { ChartIncidencias } from "@/components/ChartIncidencias";
+import { ChartEstados } from "@/components/ChartEstados";
+import { ChartCategorias } from "@/components/ChartCategorias";
+
+interface Incidencia {
+  _id: string;
+  titulo: string;
+  descripcion: string;
+  responsable: string;
+  estado: "Pendiente" | "En proceso" | "Resuelto";
+  fecha: string;
+  categoria: string;
+}
 
 export default function DashboardPage() {
+  const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:3001/incidencias")
+      .then((r) => r.json())
+      .then((data) => {
+        setIncidencias(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const total = incidencias.length;
+  const pendientes = incidencias.filter((i) => i.estado === "Pendiente").length;
+  const enProceso = incidencias.filter((i) => i.estado === "En proceso").length;
+  const resueltos = incidencias.filter((i) => i.estado === "Resuelto").length;
+
+  if (loading) return <p className="p-6 text-stone-500">Cargando...</p>;
+
   return (
-    <div className="space-y-8 p-2 max-w-7xl mx-auto">
+    <div className="space-y-8 p-6 max-w-7xl mx-auto">
       {/* Cabecera */}
       <div>
-        <p className="text-xs font-semibold tracking-wider text-emerald-800/85 uppercase">Panel interno</p>
-        <h1 className="text-4xl font-serif font-bold text-stone-800 mt-1">Dashboard</h1>
-        <p className="text-sm text-stone-500 mt-1">Resumen operativo de ventas, pedidos y productos para el turno.</p>
+        <p className="text-xs font-semibold tracking-wider text-blue-700 uppercase">
+          Panel interno
+        </p>
+        <h1 className="text-4xl font-bold text-stone-800 mt-1">Dashboard</h1>
+        <p className="text-sm text-stone-500 mt-1">
+          Resumen de incidencias registradas en el sistema.
+        </p>
       </div>
 
-      {/* Bloque de Tarjetas Principales */}
+      {/* Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Tarjeta 1 */}
-        <div className="rounded-2xl border border-stone-200/60 bg-white p-6 shadow-sm transition-all hover:shadow-md">
-          <p className="text-xs font-medium text-stone-500">Ventas de hoy</p>
-          <div className="flex items-baseline justify-between mt-2">
-            <p className="text-3xl font-bold text-stone-800">S/ 1,248</p>
-            <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-0.5">
-              +12% <ArrowUpRight className="h-3 w-3" />
-            </span>
-          </div>
-          <div className="mt-4 flex items-center gap-2 text-stone-400">
-            <div className="p-2 bg-stone-50 rounded-xl">
-              <Utensils className="h-4 w-4 text-stone-600" />
-            </div>
-            <p className="text-xs text-stone-500">vs. ayer</p>
-          </div>
-        </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-stone-500">
+              Total incidencias
+            </CardTitle>
+            <List className="h-4 w-4 text-stone-400" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-stone-800">{total}</p>
+            <p className="text-xs text-stone-400 mt-1">registradas en total</p>
+          </CardContent>
+        </Card>
 
-        {/* Tarjeta 2 */}
-        <div className="rounded-2xl border border-stone-200/60 bg-white p-6 shadow-sm transition-all hover:shadow-md">
-          <p className="text-xs font-medium text-stone-500">Pedidos activos</p>
-          <p className="text-3xl font-bold text-stone-800 mt-2">18</p>
-          <div className="mt-4 flex items-center gap-2 text-stone-400">
-            <div className="p-2 bg-amber-50 rounded-xl">
-              <Coffee className="h-4 w-4 text-amber-700" />
-            </div>
-            <p className="text-xs text-stone-500">6 en preparacion</p>
-          </div>
-        </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-stone-500">
+              Pendientes
+            </CardTitle>
+            <Clock className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-amber-600">{pendientes}</p>
+            <p className="text-xs text-stone-400 mt-1">sin atender</p>
+          </CardContent>
+        </Card>
 
-        {/* Tarjeta 3 */}
-        <div className="rounded-2xl border border-stone-200/60 bg-white p-6 shadow-sm transition-all hover:shadow-md">
-          <p className="text-xs font-medium text-stone-500">Stock critico</p>
-          <p className="text-3xl font-bold text-stone-800 mt-2">3</p>
-          <div className="mt-4 flex items-center gap-2 text-stone-400">
-            <div className="p-2 bg-rose-50 rounded-xl">
-              <AlertTriangle className="h-4 w-4 text-rose-700" />
-            </div>
-            <p className="text-xs text-stone-500">Revisar inventario</p>
-          </div>
-        </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-stone-500">
+              En proceso
+            </CardTitle>
+            <AlertCircle className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-blue-600">{enProceso}</p>
+            <p className="text-xs text-stone-400 mt-1">en atención</p>
+          </CardContent>
+        </Card>
 
-        {/* Tarjeta 4 */}
-        <div className="rounded-2xl border border-stone-200/60 bg-white p-6 shadow-sm transition-all hover:shadow-md">
-          <p className="text-xs font-medium text-stone-500">Incidencias</p>
-          <p className="text-3xl font-bold text-stone-800 mt-2">4</p>
-          <div className="mt-4 flex items-center gap-2 text-stone-400">
-            <div className="p-2 bg-emerald-50 rounded-xl">
-              <CheckSquare className="h-4 w-4 text-emerald-700" />
-            </div>
-            <p className="text-xs text-stone-500">2 requieren respuesta</p>
-          </div>
-        </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-stone-500">
+              Resueltos
+            </CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-emerald-600">{resueltos}</p>
+            <p className="text-xs text-stone-400 mt-1">completadas</p>
+          </CardContent>
+        </Card>
       </div>
-
-      {/* Dos Columnas Inferiores */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Columna Izquierda Grande: Pedidos Recientes */}
-        <div className="lg:col-span-2 space-y-4">
-          <div>
-            <h3 className="text-lg font-bold text-stone-800">Pedidos recientes</h3>
-            <p className="text-xs text-stone-500">Flujo de pedidos visibles para cocina y delivery.</p>
-          </div>
-
-          <div className="space-y-3">
-            {/* Pedido 1 */}
-            <div className="p-4 bg-white border border-stone-200/60 rounded-2xl flex items-center justify-between shadow-sm">
-              <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-stone-800">Marcia Gomez</h4>
-                <p className="text-xs text-stone-500">Latte Macchiato + Cinnamon Roll</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-stone-50 text-stone-600 border border-stone-200">
-                  Preparacion
-                </span>
-                <span className="text-sm font-semibold text-stone-800">S/ 7.50</span>
-              </div>
-            </div>
-
-            {/* Pedido 2 */}
-            <div className="p-4 bg-white border border-stone-200/60 rounded-2xl flex items-center justify-between shadow-sm">
-              <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-stone-800">Luis Herrera</h4>
-                <p className="text-xs text-stone-500">Cold Brew Vainilla</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-stone-50 text-stone-600 border border-stone-200">
-                  Delivery
-                </span>
-                <span className="text-sm font-semibold text-stone-800">S/ 4.20</span>
-              </div>
-            </div>
-
-            {/* Pedido 3 */}
-            <div className="p-4 bg-white border border-stone-200/60 rounded-2xl flex items-center justify-between shadow-sm">
-              <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-stone-800">Camila Torres</h4>
-                <p className="text-xs text-stone-500">Capuccino Supremo</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-stone-50 text-stone-600 border border-stone-200">
-                  Pendiente
-                </span>
-                <span className="text-sm font-semibold text-stone-800">S/ 5.00</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Columna Derecha Chica: Inventario Sensible */}
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-bold text-stone-800">Inventario sensible</h3>
-            <p className="text-xs text-stone-500">Productos que conviene reponer durante el día.</p>
-          </div>
-
-          <div className="bg-white border border-stone-200/60 rounded-2xl p-4 space-y-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-semibold text-stone-800">Mocha Blanco</h4>
-                <p className="text-xs text-stone-400">Especialidades</p>
-              </div>
-              <span className="text-xs font-bold bg-emerald-50 text-emerald-800 h-6 w-6 rounded-full flex items-center justify-center">8</span>
-            </div>
-
-            <div className="flex items-center justify-between border-t pt-3 border-stone-100">
-              <div>
-                <h4 className="text-sm font-semibold text-stone-800">Cold Brew Vainilla</h4>
-                <p className="text-xs text-stone-400">Fríos</p>
-              </div>
-              <span className="text-xs font-bold bg-emerald-50 text-emerald-800 h-6 w-6 rounded-full flex items-center justify-center">10</span>
-            </div>
-
-            <div className="flex items-center justify-between border-t pt-3 border-stone-100">
-              <div>
-                <h4 className="text-sm font-semibold text-stone-800">Cinnamon Roll</h4>
-                <p className="text-xs text-stone-400">Repostería</p>
-              </div>
-              <span className="text-xs font-bold bg-emerald-50 text-emerald-800 h-6 w-6 rounded-full flex items-center justify-center">10</span>
-            </div>
-          </div>
-        </div>
+      <ChartIncidencias incidencias={incidencias} />
+      <div className="grid gap-4 md:grid-cols-2">
+        <ChartEstados incidencias={incidencias} />
+        <ChartCategorias incidencias={incidencias} />
       </div>
     </div>
   );
